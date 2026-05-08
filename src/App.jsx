@@ -11,21 +11,21 @@ import {
   ClipboardList,
   Wrench,
   Camera,
-  ImagePlusd
+  ImagePlus,
+  Ship,
+  Filter
 } from 'lucide-react';
 import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
+import { getFirestore, collection, onSnapshot, doc, setDoc, updateDoc } from "firebase/firestore";
 
 // ENTER YOUR OWN FIREBASE CONFIG DATA HERE:
 const firebaseConfig = {
-  apiKey: "AIzaSyBfkx42dG7Muox66zJ3j0qIMh6GbcFBGvE",
-  authDomain: "hoeve-shipping.firebaseapp.com",
-  projectId: "hoeve-shipping",
-  storageBucket: "hoeve-shipping.firebasestorage.app",
-  messagingSenderId: "132127904238",
-  appId: "1:132127904238:web:8ec7672a18be595fe8beff",
-  measurementId: "G-VE2JH8JCLL"
-
+  apiKey: "YOUR_API_KEY",
+  authDomain: "your-project.firebaseapp.com",
+  projectId: "your-project",
+  storageBucket: "your-project.appspot.com",
+  messagingSenderId: "123456789",
+  appId: "1:123456789:web:abcdef"
 };
 
 // Initialize Firebase directly in this file
@@ -38,65 +38,88 @@ try {
   console.warn("Please enter your own Firebase credentials to activate the database.");
 }
 
-const INITIAL_PARTS = [
-  // --- FRONT ENGINE ROOM ---
-  { id: 1, name: 'Fleetguard LF3402 (Lube Filter)', category: 'Front Engine Room', stock: 2, threshold: 1, image: 'uploaded:IMG_20260205_111738.jpg-d82b33a5-4684-4e82-a74d-6383ae0248f8' },
-  { id: 2, name: 'Fleetguard LF3996 (Lube Filter)', category: 'Front Engine Room', stock: 2, threshold: 1, image: 'uploaded:IMG_20260205_111809.jpg-0e423a3b-989a-4de1-804e-10e02de8be95' },
-  { id: 3, name: 'Fleetguard FS19914 (Fuel/Water Sep)', category: 'Front Engine Room', stock: 4, threshold: 2, image: 'uploaded:IMG_20260205_112241.jpg-fa80a24f-0634-46b3-a94c-f8d02a0a7454' },
-  { id: 4, name: 'Fleetguard FF5626 (Fuel Filter)', category: 'Front Engine Room', stock: 2, threshold: 1, image: 'uploaded:IMG_20260205_111853.jpg-d1784496-de3d-4f4f-88d7-de4471886945' },
-  { id: 5, name: 'Hatz Diesel Filter 502 515 00', category: 'Front Engine Room', stock: 12, threshold: 3, image: 'uploaded:IMG_20260205_111601.jpg-149b7ef7-c231-4c68-9799-236e21bfda08' },
-  { id: 6, name: 'Yanmar Air Filter 129935-12520', category: 'Front Engine Room', stock: 1, threshold: 1, image: 'uploaded:IMG_20260205_112200.jpg-7e95e189-6072-4a42-99ca-ac8cbc994ae4' },
-  { id: 7, name: 'Parker Filter CCV55248-08', category: 'Front Engine Room', stock: 5, threshold: 1, image: 'uploaded:IMG_20260205_112139.jpg-651e314e-3d94-42b1-8f64-66c75988d0bf' },
-  { id: 8, name: 'Red Oval Air Filter', category: 'Front Engine Room', stock: 4, threshold: 1, image: 'uploaded:IMG_20260205_112418.jpg-294937be-e3c3-46e1-85e6-ca7556ae246c' },
-  { id: 9, name: 'Donaldson Secondary Filter', category: 'Front Engine Room', stock: 1, threshold: 1, image: 'uploaded:IMG_20260205_131824.jpg-7874ae81-827d-4d7c-9e49-8c8a911a3e6c' },
-  { id: 10, name: 'Scania Engine Air Filter', category: 'Front Engine Room', stock: 1, threshold: 1, image: 'uploaded:IMG_20260205_131217.jpg-d5a8f67e-471f-4c5a-a637-1aa0b5a0a004' },
-  { id: 11, name: 'Main Air Intake Filter (Large)', category: 'Front Engine Room', stock: 1, threshold: 1, image: 'uploaded:IMG_20260205_131857.jpg-09409ea6-a846-440f-a701-6674d876c6ee' },
-  { id: 12, name: 'Scania Centrifugal Housing', category: 'Front Engine Room', stock: 1, threshold: 1, image: 'uploaded:IMG_20260205_131234.jpg-ec9357d0-5114-4354-9def-a8e9bdc391ff' },
-  { id: 13, name: 'Yanmar Fuel Filter 129A00-55800', category: 'Front Engine Room', stock: 1, threshold: 1, image: 'uploaded:IMG_20260205_112305.jpg-d51bc66b-3786-4b54-befe-72eb2b113349' },
-  { id: 14, name: 'Orange Filter Element', category: 'Front Engine Room', stock: 4, threshold: 1, image: 'uploaded:IMG_20260205_112017.jpg-14cdf463-0207-4da6-8e49-4ab089541e94' },
-  { id: 15, name: 'Fleetguard LF16243 (Lube Filter)', category: 'Front Engine Room', stock: 3, threshold: 1, image: 'uploaded:IMG_20260205_111525.jpg-483a983d-89db-4209-a60b-6b5226adceb6' },
-  { id: 16, name: 'Fleetguard FF5638 (Fuel Filter)', category: 'Front Engine Room', stock: 4, threshold: 1, image: 'uploaded:IMG_20260205_111507.jpg-d6b5c8b0-0977-4bdc-9a8f-559ab6753f23' },
-  { id: 17, name: 'Fleetguard AF25557 (Air Filter)', category: 'Front Engine Room', stock: 1, threshold: 1, image: 'uploaded:IMG_20260205_111430.jpg-2cf7883e-e132-48b3-ab8f-9890c7cade26' },
-  { id: 18, name: 'Fleetguard AH8899 (Air Filter)', category: 'Front Engine Room', stock: 5, threshold: 1, image: 'uploaded:IMG_20260205_111345.jpg-e95dbfe3-959c-499a-96e8-40ad4eb45ee2' },
-  { id: 19, name: 'Fleetguard FS19861', category: 'Front Engine Room', stock: 1, threshold: 1, image: 'uploaded:IMG_20260205_111144.jpg-c7042051-493a-4224-9bf5-9bbbdd899439' },
-  { id: 20, name: 'White Water Filter Cartridge', category: 'Front Engine Room', stock: 2, threshold: 1, image: 'uploaded:IMG_20260205_111124.jpg-2dcc2268-3eec-4159-ba27-c1964f8033b6' },
-
-  // --- BACK ENGINE ROOM (Deduplicated and accurately counted) ---
-  { id: 21, name: 'Separ Filter SWK-2000/10', category: 'Back Engine Room', stock: 3, threshold: 1, image: 'uploaded:IMG_20260203_083810.jpg-343cad8f-9722-4cc3-9136-2ee35d087255' },
-  { id: 22, name: 'Fleetguard FF5626 (Fuel Filter)', category: 'Back Engine Room', stock: 7, threshold: 2, image: 'uploaded:IMG_20260203_083135.jpg-e4b0fe0c-8747-435a-ada4-5d5e47f63fea' },
-  { id: 23, name: 'Large Metal Mesh Filter Cartridge', category: 'Back Engine Room', stock: 1, threshold: 1, image: 'uploaded:IMG_20260202_084147.jpg-030935e6-60cc-4c75-94c0-2b14f5f94a09' },
-  { id: 24, name: 'Fleetguard FS19861 (Fuel/Water Sep)', category: 'Back Engine Room', stock: 7, threshold: 2, image: 'uploaded:IMG_20260203_083308.jpg-dd7fc168-965e-4758-9acf-c0c91b38f3aa' },
-  { id: 25, name: 'Small Orange Filter Element', category: 'Back Engine Room', stock: 3, threshold: 1, image: 'uploaded:IMG_20260203_082828.jpg-61c4b042-96ae-4e09-80c5-b7236a63568b' },
-  { id: 26, name: 'Fleetguard AF25557 (Air Filter)', category: 'Back Engine Room', stock: 1, threshold: 1, image: 'uploaded:IMG_20260202_084832.jpg-16be7402-a260-4aa3-a9ad-75317db6cb92' },
-  { id: 27, name: 'Fleetguard FS19914 (Fuel/Water Sep)', category: 'Back Engine Room', stock: 7, threshold: 2, image: 'uploaded:IMG_20260203_084057.jpg-e728a7f5-6847-48be-85a2-483c5f0508ac' },
-  { id: 28, name: 'Anglo Belgian Corp 620.051.1105.02 (V10)', category: 'Back Engine Room', stock: 5, threshold: 1, image: 'uploaded:IMG_20260202_085141.jpg-4dc41bd9-d3ab-4817-a90b-deef58af1f89' },
-  { id: 29, name: 'Castrol Labcheck Kit 6 Samples', category: 'Back Engine Room', stock: 6, threshold: 1, image: 'uploaded:IMG_20260203_084359.jpg-e488622a-b47e-4dbf-a633-fda0747c0c96' },
-  { id: 30, name: 'Large Pleated Paper Cartridge', category: 'Back Engine Room', stock: 1, threshold: 1, image: 'uploaded:IMG_20260202_084340.jpg-d771f022-2f97-4d8b-8ca3-d1a51b53cef0' },
-  { id: 31, name: 'Sekur DIRIN 230 A2B2E2K2P3', category: 'Back Engine Room', stock: 5, threshold: 1, image: 'uploaded:IMG_20260203_083615.jpg-8067d0d2-e191-49fd-86f8-ea0499cdfad3' },
-  { id: 32, name: 'Filter Elements Kit F11-1413', category: 'Back Engine Room', stock: 2, threshold: 1, image: 'uploaded:IMG_20260202_084438.jpg-c99ac9bf-ed7e-45c6-8916-bd3991c16efd' },
-  { id: 33, name: 'UFI Filters ERA32NCD (77301-32-P25)', category: 'Back Engine Room', stock: 2, threshold: 1, image: 'uploaded:IMG_20260202_085539.jpg-c147afdd-284d-4719-b448-a38a93a3cbaf' },
-  { id: 34, name: 'John Deere Water Separator (RE62419)', category: 'Back Engine Room', stock: 1, threshold: 1, image: 'uploaded:IMG_20260203_082618.jpg-574c8c97-de55-4bf8-8b70-5b4236cf35fd' },
-  { id: 35, name: 'Donaldson P550008', category: 'Back Engine Room', stock: 3, threshold: 1, image: 'uploaded:IMG_20260202_085301.jpg-e31ef870-26e3-4e63-bc3d-d7aa6fec012f' },
-  { id: 36, name: 'Black Mesh Air Filter', category: 'Back Engine Room', stock: 3, threshold: 1, image: 'uploaded:IMG_20260202_085426.jpg-3d7cbd4c-ccc6-409e-b110-20f14fab3007' },
-  { id: 37, name: 'Fleetguard LF16243 (Lube Filter)', category: 'Back Engine Room', stock: 3, threshold: 1, image: 'uploaded:IMG_20260203_082937.jpg-d265502f-8788-44fc-be8c-90f32e7ac333' },
-  { id: 38, name: 'Separ Filter Element 01030', category: 'Back Engine Room', stock: 1, threshold: 1, image: 'uploaded:IMG_20260203_083751.jpg-70b06406-bb47-40e4-825b-0c261414d34c' },
-  { id: 39, name: 'Mann Filter W 75/3', category: 'Back Engine Room', stock: 1, threshold: 1, image: 'uploaded:IMG_20260203_083840.jpg-a721ed78-0036-4dd9-806f-057d83e53e22' },
-  { id: 40, name: 'Anglo Belgian Corp 620.031.1104.04 (V12)', category: 'Back Engine Room', stock: 5, threshold: 1, image: 'uploaded:IMG_20260202_084554.jpg-14e2810c-a8c9-4f50-9fa2-76982f9bdb12' },
-  { id: 41, name: 'Parker Racor Filter 2020V30', category: 'Back Engine Room', stock: 1, threshold: 1, image: 'uploaded:IMG_20260202_084350.jpg-34810255-5c2a-4c9f-8fab-1c516c6e250b' },
-  { id: 42, name: 'Imbema Cleton Grease SF01', category: 'Back Engine Room', stock: 1, threshold: 1, image: 'uploaded:IMG_20260203_082556.jpg-978b0524-691b-4655-9c66-3c0295101072' }
+const SHIPS = ['Rapida', 'Rapido'];
+const CATEGORIES = [
+  'Fuel & Water', 
+  'Oil & Lubrication', 
+  'Air Filters', 
+  'Engine Parts', 
+  'Fluids & Testing', 
+  'Safety', 
+  'Other'
 ];
 
-const CATEGORIES = ['Front Engine Room', 'Back Engine Room'];
+const INITIAL_PARTS = [
+  // --- FUEL & WATER ---
+  { id: 3, ship: 'Rapida', name: 'Fleetguard FS19914 (Fuel/Water Sep)', category: 'Fuel & Water', stock: 4, threshold: 2, image: '/IMG_20260205_112241.jpg' },
+  { id: 4, ship: 'Rapida', name: 'Fleetguard FF5626 (Fuel Filter)', category: 'Fuel & Water', stock: 2, threshold: 1, image: '/IMG_20260205_111853.jpg' },
+  { id: 13, ship: 'Rapida', name: 'Yanmar Fuel Filter 129A00-55800', category: 'Fuel & Water', stock: 1, threshold: 1, image: '/IMG_20260205_112305.jpg' },
+  { id: 16, ship: 'Rapida', name: 'Fleetguard FF5638 (Fuel Filter)', category: 'Fuel & Water', stock: 4, threshold: 1, image: '/IMG_20260205_111507.jpg' },
+  { id: 19, ship: 'Rapida', name: 'Fleetguard FS19861', category: 'Fuel & Water', stock: 1, threshold: 1, image: '/IMG_20260205_111144.jpg' },
+  { id: 20, ship: 'Rapida', name: 'White Water Filter Cartridge', category: 'Fuel & Water', stock: 2, threshold: 1, image: '/IMG_20260205_111124.jpg' },
+  { id: 21, ship: 'Rapida', name: 'Separ Filter SWK-2000/10', category: 'Fuel & Water', stock: 3, threshold: 1, image: '/IMG_20260203_083810.jpg' },
+  { id: 22, ship: 'Rapida', name: 'Fleetguard FF5626 (Fuel Filter)', category: 'Fuel & Water', stock: 7, threshold: 2, image: '/IMG_20260203_083135.jpg' },
+  { id: 24, ship: 'Rapida', name: 'Fleetguard FS19861 (Fuel/Water Sep)', category: 'Fuel & Water', stock: 7, threshold: 2, image: '/IMG_20260203_083308.jpg' },
+  { id: 27, ship: 'Rapida', name: 'Fleetguard FS19914 (Fuel/Water Sep)', category: 'Fuel & Water', stock: 7, threshold: 2, image: '/IMG_20260203_084057.jpg' },
+  { id: 34, ship: 'Rapida', name: 'John Deere Water Separator (RE62419)', category: 'Fuel & Water', stock: 1, threshold: 1, image: '/IMG_20260203_082618.jpg' },
+  { id: 38, ship: 'Rapida', name: 'Separ Filter Element 01030', category: 'Fuel & Water', stock: 1, threshold: 1, image: '/IMG_20260203_083751.jpg' },
+  { id: 41, ship: 'Rapida', name: 'Parker Racor Filter 2020V30', category: 'Fuel & Water', stock: 1, threshold: 1, image: '/IMG_20260202_084350.jpg' },
+
+  // --- OIL & LUBRICATION ---
+  { id: 1, ship: 'Rapida', name: 'Fleetguard LF3402 (Lube Filter)', category: 'Oil & Lubrication', stock: 2, threshold: 1, image: '/IMG_20260205_111738.jpg' },
+  { id: 2, ship: 'Rapida', name: 'Fleetguard LF3996 (Lube Filter)', category: 'Oil & Lubrication', stock: 2, threshold: 1, image: '/IMG_20260205_111809.jpg' },
+  { id: 15, ship: 'Rapida', name: 'Fleetguard LF16243 (Lube Filter)', category: 'Oil & Lubrication', stock: 3, threshold: 1, image: '/IMG_20260205_111525.jpg' },
+  { id: 35, ship: 'Rapida', name: 'Donaldson P550008 (Lube Filter)', category: 'Oil & Lubrication', stock: 3, threshold: 1, image: '/IMG_20260202_085301.jpg' },
+  { id: 37, ship: 'Rapida', name: 'Fleetguard LF16243 (Lube Filter)', category: 'Oil & Lubrication', stock: 3, threshold: 1, image: '/IMG_20260203_082937.jpg' },
+  { id: 39, ship: 'Rapida', name: 'Mann Filter W 75/3', category: 'Oil & Lubrication', stock: 1, threshold: 1, image: '/IMG_20260203_083840.jpg' },
+
+  // --- AIR FILTERS ---
+  { id: 6, ship: 'Rapida', name: 'Yanmar Air Filter 129935-12520', category: 'Air Filters', stock: 1, threshold: 1, image: '/IMG_20260205_112200.jpg' },
+  { id: 7, ship: 'Rapida', name: 'Parker Filter CCV55248-08', category: 'Air Filters', stock: 5, threshold: 1, image: '/IMG_20260205_112139.jpg' },
+  { id: 8, ship: 'Rapida', name: 'Red Oval Air Filter', category: 'Air Filters', stock: 4, threshold: 1, image: '/IMG_20260205_112418.jpg' },
+  { id: 9, ship: 'Rapida', name: 'Donaldson Secondary Filter', category: 'Air Filters', stock: 1, threshold: 1, image: '/IMG_20260205_131824.jpg' },
+  { id: 10, ship: 'Rapida', name: 'Scania Engine Air Filter', category: 'Air Filters', stock: 1, threshold: 1, image: '/IMG_20260205_131217.jpg' },
+  { id: 11, ship: 'Rapida', name: 'Main Air Intake Filter (Large)', category: 'Air Filters', stock: 1, threshold: 1, image: '/IMG_20260205_131857.jpg' },
+  { id: 17, ship: 'Rapida', name: 'Fleetguard AF25557 (Air Filter)', category: 'Air Filters', stock: 1, threshold: 1, image: '/IMG_20260205_111430.jpg' },
+  { id: 18, ship: 'Rapida', name: 'Fleetguard AH8899 (Air Filter)', category: 'Air Filters', stock: 5, threshold: 1, image: '/IMG_20260205_111345.jpg' },
+  { id: 26, ship: 'Rapida', name: 'Fleetguard AF25557 (Air Filter)', category: 'Air Filters', stock: 1, threshold: 1, image: '/IMG_20260202_084832.jpg' },
+  { id: 36, ship: 'Rapida', name: 'Black Mesh Air Filter', category: 'Air Filters', stock: 3, threshold: 1, image: '/IMG_20260202_085426.jpg' },
+
+  // --- ENGINE PARTS ---
+  { id: 5, ship: 'Rapida', name: 'Hatz Diesel Filter 502 515 00', category: 'Engine Parts', stock: 12, threshold: 3, image: '/IMG_20260205_111601.jpg' },
+  { id: 12, ship: 'Rapida', name: 'Scania Centrifugal Housing', category: 'Engine Parts', stock: 1, threshold: 1, image: '/IMG_20260205_131234.jpg' },
+  { id: 28, ship: 'Rapida', name: 'Anglo Belgian Corp 620.051.1105.02 (V10)', category: 'Engine Parts', stock: 5, threshold: 1, image: '/IMG_20260202_085141.jpg' },
+  { id: 32, ship: 'Rapida', name: 'Filter Elements Kit F11-1413', category: 'Engine Parts', stock: 2, threshold: 1, image: '/IMG_20260202_084438.jpg' },
+  { id: 33, ship: 'Rapida', name: 'UFI Filters ERA32NCD (77301-32-P25)', category: 'Engine Parts', stock: 2, threshold: 1, image: '/IMG_20260202_085539.jpg' },
+  { id: 40, ship: 'Rapida', name: 'Anglo Belgian Corp 620.031.1104.04 (V12)', category: 'Engine Parts', stock: 5, threshold: 1, image: '/IMG_20260202_084554.jpg' },
+
+  // --- FLUIDS & TESTING ---
+  { id: 29, ship: 'Rapida', name: 'Castrol Labcheck Kit 6 Samples', category: 'Fluids & Testing', stock: 6, threshold: 1, image: '/IMG_20260203_084359.jpg' },
+  { id: 42, ship: 'Rapida', name: 'Imbema Cleton Grease SF01', category: 'Fluids & Testing', stock: 1, threshold: 1, image: '/IMG_20260203_082556.jpg' },
+
+  // --- SAFETY ---
+  { id: 31, ship: 'Rapida', name: 'Sekur DIRIN 230 A2B2E2K2P3', category: 'Safety', stock: 5, threshold: 1, image: '/IMG_20260203_083615.jpg' },
+
+  // --- OTHER ---
+  { id: 14, ship: 'Rapida', name: 'Orange Filter Element', category: 'Other', stock: 4, threshold: 1, image: '/IMG_20260205_112017.jpg' },
+  { id: 23, ship: 'Rapida', name: 'Large Metal Mesh Filter Cartridge', category: 'Other', stock: 1, threshold: 1, image: '/IMG_20260202_084147.jpg' },
+  { id: 25, ship: 'Rapida', name: 'Small Orange Filter Element', category: 'Other', stock: 3, threshold: 1, image: '/IMG_20260203_082828.jpg' },
+  { id: 30, ship: 'Rapida', name: 'Large Pleated Paper Cartridge', category: 'Other', stock: 1, threshold: 1, image: '/IMG_20260202_084340.jpg' },
+  
+  // --- TEST DATA FOR RAPIDO ---
+  { id: 43, ship: 'Rapido', name: 'Sample Air Filter', category: 'Air Filters', stock: 5, threshold: 2, image: null }
+];
+
 
 export default function App() {
+  const [selectedShip, setSelectedShip] = useState('Rapida'); 
   const [view, setView] = useState('inventory');
   
-  // NOTE: parts is now empty ([]), as it will be populated live by Firebase!
   const [parts, setParts] = useState([]); 
   const [reports, setReports] = useState([]);
   
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('Front Engine Room');
+  const [selectedCategory, setSelectedCategory] = useState('All'); 
   
   // State for Add Report
   const [newReport, setNewReport] = useState({ title: '', description: '', image: null });
@@ -104,21 +127,19 @@ export default function App() {
 
   // State for Add Part
   const [showAddPartModal, setShowAddPartModal] = useState(false);
-  const [newPart, setNewPart] = useState({ name: '', category: 'Front Engine Room', stock: 1, threshold: 1, image: null });
+  const [newPart, setNewPart] = useState({ name: '', category: CATEGORIES[0], stock: 1, threshold: 1, image: null });
 
   // --- DATABASE CONNECTION FOR INVENTORY ---
   useEffect(() => {
-    if (!db) return; // Prevent errors if credentials are not configured
+    if (!db) return; 
     const unsubscribe = onSnapshot(collection(db, 'parts'), (snapshot) => {
       if (snapshot.empty) {
-        // If database is empty, upload the INITIAL_PARTS list once
+        // Upload initial parts if database is empty
         INITIAL_PARTS.forEach(async (part) => {
           await setDoc(doc(db, 'parts', part.id.toString()), part);
         });
       } else {
-        // Fetch parts live from the cloud
         const partsData = snapshot.docs.map(doc => ({ id: Number(doc.id), ...doc.data() }));
-        // Sort by ID or name
         setParts(partsData.sort((a, b) => a.id - b.id));
       }
     });
@@ -130,27 +151,32 @@ export default function App() {
     if (!db) return;
     const unsubscribe = onSnapshot(collection(db, 'reports'), (snapshot) => {
       const reportsData = snapshot.docs.map(doc => ({ id: Number(doc.id), ...doc.data() }));
-      // Sort newest reports at the top
       setReports(reportsData.sort((a, b) => b.id - a.id));
     });
     return () => unsubscribe();
   }, []);
 
-  // Search filter logic
+  // Search & Ship & Category filter logic
   const filteredParts = useMemo(() => {
     return parts.filter(part => {
+      const matchesShip = part.ship === selectedShip || (!part.ship && selectedShip === 'Rapida');
       const matchesSearch = part.name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = part.category === selectedCategory;
-      return matchesSearch && matchesCategory;
+      const matchesCategory = selectedCategory === 'All' || part.category === selectedCategory;
+      return matchesShip && matchesSearch && matchesCategory;
     });
-  }, [parts, searchTerm, selectedCategory]);
+  }, [parts, searchTerm, selectedCategory, selectedShip]);
 
-  // Update stock (now linked to the Cloud!)
+  const filteredReports = useMemo(() => {
+    return reports.filter(report => {
+       return report.ship === selectedShip || (!report.ship && selectedShip === 'Rapida');
+    });
+  }, [reports, selectedShip]);
+
+  // Update stock
   const updateStock = async (id, delta) => {
     if (!db) return;
     const partToUpdate = parts.find(p => p.id === id);
     if (partToUpdate) {
-      // Update the cloud database
       const partRef = doc(db, 'parts', id.toString());
       await updateDoc(partRef, {
         stock: Math.max(0, partToUpdate.stock + delta)
@@ -166,12 +192,12 @@ export default function App() {
     const newId = Date.now();
     const report = {
       id: newId,
+      ship: selectedShip,
       ...newReport,
       date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
       status: 'Open'
     };
 
-    // Save to cloud database
     await setDoc(doc(db, 'reports', newId.toString()), report);
     setNewReport({ title: '', description: '', image: null });
     setShowAddModal(false);
@@ -196,6 +222,7 @@ export default function App() {
     const newId = Date.now();
     const part = {
       id: newId,
+      ship: selectedShip,
       name: newPart.name,
       category: newPart.category,
       stock: parseInt(newPart.stock, 10) || 0,
@@ -203,9 +230,8 @@ export default function App() {
       image: newPart.image
     };
 
-    // Save to cloud database
     await setDoc(doc(db, 'parts', newId.toString()), part);
-    setNewPart({ name: '', category: selectedCategory, stock: 1, threshold: 1, image: null });
+    setNewPart({ name: '', category: selectedCategory === 'All' ? CATEGORIES[0] : selectedCategory, stock: 1, threshold: 1, image: null });
     setShowAddPartModal(false);
   };
 
@@ -220,9 +246,9 @@ export default function App() {
     }
   };
 
-  // --- THE INTERFACE ---
+  // --- UI RENDER ---
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-20">
       {/* Header */}
       <header className="bg-[#0f172a] text-white shadow-xl sticky top-0 z-20">
         <div className="max-w-6xl mx-auto px-4 py-5 flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -256,55 +282,86 @@ export default function App() {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-8">
+        
+        {/* --- SHIP SELECTION BAR --- */}
+        <div className="flex justify-center mb-10">
+          <div className="bg-slate-200/50 p-1.5 rounded-full inline-flex shadow-inner">
+            {SHIPS.map(ship => (
+              <button
+                key={ship}
+                onClick={() => setSelectedShip(ship)}
+                className={`flex items-center gap-2 px-8 py-3 rounded-full text-sm font-black tracking-wide transition-all duration-300 ${
+                  selectedShip === ship
+                    ? 'bg-white text-blue-600 shadow-md transform scale-100'
+                    : 'text-slate-500 hover:text-slate-800 hover:bg-white/50 scale-95'
+                }`}
+              >
+                <Ship size={18} className={selectedShip === ship ? "text-blue-500" : "text-slate-400"} />
+                {ship.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {view === 'inventory' ? (
           <div className="space-y-6">
             
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h2 className="text-3xl font-black text-slate-800">Inventory</h2>
-                <p className="text-slate-500">Manage your spare parts</p>
+                <p className="text-slate-500">Manage your spare parts for {selectedShip}</p>
               </div>
-              <button 
-                onClick={() => {
-                  setNewPart(prev => ({ ...prev, category: selectedCategory }));
-                  setShowAddPartModal(true);
-                }}
-                className="bg-blue-600 text-white px-5 sm:px-6 py-3 rounded-2xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 flex items-center gap-2 transition-all active:scale-95"
-              >
-                <Plus size={20} />
-                <span className="hidden sm:inline">Add Part</span>
-                <span className="sm:hidden">Add</span>
-              </button>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => {
+                    setNewPart(prev => ({ ...prev, category: selectedCategory === 'All' ? CATEGORIES[0] : selectedCategory }));
+                    setShowAddPartModal(true);
+                  }}
+                  className="bg-blue-600 text-white px-4 sm:px-6 py-3 rounded-2xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 flex items-center gap-2 transition-all active:scale-95"
+                >
+                  <Plus size={20} />
+                  <span className="hidden sm:inline">Add Part</span>
+                  <span className="sm:hidden">Add</span>
+                </button>
+              </div>
             </div>
 
             <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col gap-4">
-              <div className="flex flex-col sm:flex-row gap-4 items-stretch">
-                <div className="relative flex-1 group">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={20} />
-                  <input 
-                    type="text" 
-                    placeholder="Search parts..."
-                    className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
+              <div className="relative group w-full">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={20} />
+                <input 
+                  type="text" 
+                  placeholder="Search by name..."
+                  className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
               </div>
 
-              <div className="flex bg-slate-100 p-1.5 rounded-xl border border-slate-200">
+              {/* Horizontally scrollable category filter */}
+              <div className="flex overflow-x-auto gap-2 pb-2 mt-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                <button
+                  onClick={() => setSelectedCategory('All')}
+                  className={`whitespace-nowrap py-2.5 px-4 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
+                    selectedCategory === 'All' 
+                    ? 'bg-slate-800 text-white shadow-md' 
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  <Filter size={16} className={selectedCategory === 'All' ? 'text-white' : 'text-slate-400'}/>
+                  All
+                </button>
                 {CATEGORIES.map(cat => (
                   <button
                     key={cat}
                     onClick={() => setSelectedCategory(cat)}
-                    className={`flex-1 py-3 px-2 rounded-lg text-sm font-bold uppercase tracking-wider transition-all duration-200 flex items-center justify-center gap-2 ${
+                    className={`whitespace-nowrap py-2.5 px-4 rounded-xl text-sm font-bold transition-all ${
                       selectedCategory === cat 
-                      ? 'bg-white text-blue-700 shadow-sm border border-slate-200/50' 
-                      : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
+                      ? 'bg-blue-100 text-blue-700 border border-blue-200 shadow-sm' 
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                     }`}
                   >
-                    <Wrench size={16} className={selectedCategory === cat ? 'text-blue-500' : 'text-slate-400'}/>
-                    <span className="hidden sm:inline">{cat}</span>
-                    <span className="sm:hidden">{cat.replace('Engine Room', 'ER')}</span>
+                    {cat}
                   </button>
                 ))}
               </div>
@@ -326,8 +383,8 @@ export default function App() {
                         <span className="text-xs font-bold uppercase tracking-widest">No Photo</span>
                       </div>
                     )}
-                    <div className="absolute top-4 left-4 z-10">
-                      <span className="bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tighter text-slate-700 shadow-sm">
+                    <div className="absolute top-4 left-4 z-10 flex gap-2">
+                      <span className="bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tighter text-slate-700 shadow-sm border border-slate-100">
                         {part.category}
                       </span>
                     </div>
@@ -367,7 +424,7 @@ export default function App() {
                 <div className="col-span-full bg-white border border-slate-200 border-dashed rounded-[2rem] py-16 text-center flex flex-col items-center">
                   <Package size={48} className="text-slate-300 mb-4" />
                   <h3 className="text-lg font-bold text-slate-600">No items found</h3>
-                  <p className="text-slate-400 text-sm mt-1">This list is currently empty.</p>
+                  <p className="text-slate-400 text-sm mt-1">The list for {selectedShip} is empty in this category.</p>
                 </div>
               )}
             </div>
@@ -377,7 +434,7 @@ export default function App() {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-3xl font-black text-slate-800">Fault Reports</h2>
-                <p className="text-slate-500">Track issues and defects</p>
+                <p className="text-slate-500">Logbook for vessel {selectedShip}</p>
               </div>
               <button 
                 onClick={() => setShowAddModal(true)}
@@ -389,17 +446,17 @@ export default function App() {
               </button>
             </div>
 
-            {reports.length === 0 ? (
+            {filteredReports.length === 0 ? (
               <div className="bg-white border-2 border-dashed border-slate-200 rounded-[2rem] p-12 text-center flex flex-col items-center">
                 <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center text-blue-500 mb-4">
                   <CheckCircle2 size={32} />
                 </div>
                 <h3 className="text-lg font-bold text-slate-800">No Active Issues</h3>
-                <p className="text-slate-500 mt-2 text-sm max-w-xs">Everything is operating smoothly. Use the button above to log a new issue.</p>
+                <p className="text-slate-500 mt-2 text-sm max-w-xs">Everything is working properly on the {selectedShip}. Use the button above to report a new issue.</p>
               </div>
             ) : (
               <div className="space-y-4">
-                {reports.map(report => (
+                {filteredReports.map(report => (
                   <div key={report.id} className="bg-white p-5 sm:p-6 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col sm:flex-row gap-5 sm:gap-6 items-start">
                     {report.image && (
                       <div className="w-full sm:w-32 h-40 sm:h-32 rounded-2xl overflow-hidden shrink-0 border border-slate-100 bg-slate-100">
@@ -429,7 +486,10 @@ export default function App() {
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-lg rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-6 sm:p-8 border-b border-slate-100 flex justify-between items-center">
-              <h2 className="text-xl font-black text-slate-800 tracking-tight">Add New Part</h2>
+              <div>
+                <h2 className="text-xl font-black text-slate-800 tracking-tight">Add Part</h2>
+                <p className="text-xs font-bold text-blue-500 uppercase tracking-widest mt-1">Vessel: {selectedShip}</p>
+              </div>
               <button onClick={() => setShowAddPartModal(false)} className="w-10 h-10 flex items-center justify-center bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-500 rounded-full transition-colors">
                 <X size={20} />
               </button>
@@ -473,14 +533,15 @@ export default function App() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest px-1">Category (Location)</label>
+                <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest px-1">Type / Category</label>
                 <select 
                   className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 outline-none transition-all font-medium text-sm"
                   value={newPart.category}
                   onChange={(e) => setNewPart({...newPart, category: e.target.value})}
                 >
-                  <option value="Front Engine Room">Front Engine Room</option>
-                  <option value="Back Engine Room">Back Engine Room</option>
+                  {CATEGORIES.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
                 </select>
               </div>
               
@@ -535,7 +596,10 @@ export default function App() {
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-lg rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-6 sm:p-8 border-b border-slate-100 flex justify-between items-center">
-              <h2 className="text-xl font-black text-slate-800 tracking-tight">Maintenance Log</h2>
+              <div>
+                <h2 className="text-xl font-black text-slate-800 tracking-tight">Maintenance Log</h2>
+                <p className="text-xs font-bold text-blue-500 uppercase tracking-widest mt-1">Vessel: {selectedShip}</p>
+              </div>
               <button onClick={() => setShowAddModal(false)} className="w-10 h-10 flex items-center justify-center bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-500 rounded-full transition-colors">
                 <X size={20} />
               </button>
@@ -602,7 +666,7 @@ export default function App() {
                   type="submit"
                   className="w-full py-4 bg-blue-600 text-white rounded-xl font-black uppercase tracking-widest shadow-md shadow-blue-200 hover:bg-blue-700 transition-all active:scale-[0.98] text-sm"
                 >
-                  Save Report
+                  Save Log
                 </button>
               </div>
             </form>
